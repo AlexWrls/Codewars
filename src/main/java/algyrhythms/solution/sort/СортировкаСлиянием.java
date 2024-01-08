@@ -26,7 +26,7 @@ public class СортировкаСлиянием {
     @Test
     public void test() {
         int[] arr = new int[]{10, 5, 2, 4, 1, 3, 8, 7, 9, 6};
-        Assert.assertArrayEquals(sort(arr), new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        Assert.assertArrayEquals(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, sort(arr));
     }
 
     public static int[] sort(int[] arr) {
@@ -59,7 +59,7 @@ public class СортировкаСлиянием {
     private static int[] mergeArray(int[] arrayA, int[] arrayB) {
 
         int[] result = new int[arrayA.length + arrayB.length];
-        for (int k = 0 ,i = 0, j = 0; k < result.length; k++) {
+        for (int k = 0, i = 0, j = 0; k < result.length; k++) {
             if (i > arrayA.length - 1) {
                 int a = arrayB[j];
                 result[k] = a;
