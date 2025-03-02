@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <!-- JS -->
+    <!--    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>-->
+    <script th:src="@{/js/entity.js}" src="entity.js"></script>
+    <!-- CSS -->
+    <!--    <link type="text/css" rel="stylesheet" th:href="@{/css/bootstrap.min.css}">-->
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col">
+            <canvas id="canvas" width="570" height="570" style="background: #171616;"></canvas>
+        </div>
+        <div class="col">
+            <div id="lv"></div>
+            <div id="source"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let canvas, ctx, main;
+    let play = new LiveMoveRect(30, 9 * 30 + 2, 0, 0, 25, 25, '#446d43', false, 3)
+    let width = 570;
+    let height = 570;
+
+    let LIKER = []
+    let GHOSTS = []
+    let WALLS = []
+
+    let mainSpeed = 10;
+    let stage = 0;
+
+    let MATRIX =
+        [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
+            [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0],
+            [0, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
+            [0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ];
+
+    //Погготовка Сцены
+    window.onload = function () {
+        canvas = document.getElementById("canvas");
+        ctx = canvas.getContext("2d");
+        preinstall();
+    };
+
+    function preinstall(){
+        stage++
+        mainSpeed +=2
+        clearInterval(main);
+        ctx.clearRect(0, 0, width, height);
+        for (let i = 0; i < GHOSTS.length; i++) {
+            clearInterval(GHOSTS[i].move)
+        }
+        ctx.fillStyle = 'gray'
+        ctx.font = "48px serif";
+        ctx.fillText("Stage " + stage, 200, 300);
+        ctx.font = "18px serif";
+        ctx.fillText("Push Enter ", 230, 350);
+    }
+
+    function createGhost() {
+        let x, y
+        while (true) {
+            x = rnd(19)
+            y = rnd(19)
+            if (MATRIX[y][x] == 1) {
+                return new MoveRect(x * 30, y * 30, 0, 0, 25, 25, "rgb(" + rnd(255) + "," + rnd(255) + "," + rnd(255) + ")", true)
+            }
+        }
+    }
+
+    function createLiker() {
+        while (true) {
+            const li = new Rect(rnd(width), rnd(height), 25, 25, '#d9c005')
+            if (!li.checkCollision(WALLS) && !li.checkCollision(LIKER)) {
+                return li;
+            }
+        }
+    }
+
+    addEventListener("keydown", function moveRect(e) {
+        play.dx = play.dy = 0;
+        const keyCode = e.keyCode;
+        if (keyCode == 37) {
+            play.dx = -1
+        }
+        if (keyCode == 39) {
+            play.dx = 1
+        }
+        if (keyCode == 38) {
+            play.dy = -1
+        }
+        if (keyCode == 40) {
+            play.dy = 1
+        }
+        if (keyCode == 13) {
+            mainScene()
+        }
+    });
+
+    // Основная Сцена
+    function mainScene() {
+        clearInterval(main)
+        // объекты
+        play = new LiveMoveRect(30, 9 * 30 + 2, 0, 0, 25, 25, '#446d43', false, 3)
+        LIKER = []
+        GHOSTS = []
+        WALLS = []
+
+        // стены
+        for (let i = 0; i < MATRIX.length; i++) {
+            for (let j = 0; j < MATRIX[i].length; j++) {
+                if (MATRIX[i][j] == 0) {
+                    WALLS.push(new Rect(j * 30, i * 30, 30, 30, '#b8b8b8'))
+                }
+            }
+        }
+        //призрак
+        for (let i = 0; i < 4; i++) {
+            GHOSTS.push(createGhost())
+        }
+        for (let i = 0; i < GHOSTS.length; i++) {
+            setMoveGhost(GHOSTS[i], mainSpeed)
+        }
+        //лайк
+        LIKER = [createLiker(), createLiker()]
+        main = setInterval(function drawFrame() {
+            play.x += play.dx;
+            play.y += play.dy;
+            ctx.clearRect(0, 0, width, height);
+            drawObjects()
+            checkZoneCollisionPlayer()
+
+            if (play.checkCollision(WALLS)) {
+                play.stop()
+            }
+            let ghost = play.getObjCollision(GHOSTS);
+            if (ghost != null && ghost.power) {
+                play.stop()
+                if (play.power) {
+                    ghost.power = false;
+                    play.power = false;
+                    setCrayMoveGhost(ghost, 100)
+                } else {
+                    play.live -= 1;
+                    document.getElementById('lv').innerHTML = '<p>:' + play.live + '</p>'
+                }
+            }
+            let lik = play.getObjCollision(LIKER)
+            if (lik != null) {
+                document.getElementById('source').innerHTML = '<span>SUPER POWER</span>'
+                play.power = true;
+                LIKER = LIKER.filter(i => i != lik)
+                LIKER.push(createLiker())
+            }
+        }, 1000 / 60);
+    }
+
+    // Нарисовка объектов
+    function drawObjects() {
+        for (let i = 0; i < WALLS.length; i++) {
+            WALLS[i].drawRect(ctx)
+        }
+        for (let i = 0; i < GHOSTS.length; i++) {
+            GHOSTS[i].drawGhost(ctx)
+        }
+        for (let i = 0; i < LIKER.length; i++) {
+            LIKER[i].drawLiker(ctx);
+        }
+        play.drawPlayer(ctx)
+    }
+
+    // Изменение цвета лайка
+    setInterval(function () {
+        for (let i = 0; i < LIKER.length; i++) {
+            LIKER[i].color = "rgb(" + rnd(255) + "," + rnd(255) + "," + rnd(255) + ")"
+        }
+    }, 1000)
+
+    function setMoveGhost(obj, speed) {
+        clearInterval(obj.move)
+        obj.move = setInterval(function () {
+            obj.dx = obj.dy = 0
+            let f = [new Rect(obj.x + 1, obj.y, obj.wid, obj.hei),
+                new Rect(obj.x, obj.y + 1, obj.wid, obj.hei),
+                new Rect(obj.x - 1, obj.y, obj.wid, obj.hei),
+                new Rect(obj.x, obj.y - 1, obj.wid, obj.hei)];
+            let fo = GHOSTS.filter(i => i !== obj);
+            if (obj.checkCollision([play])) {
+                obj.dx = obj.dy = 0
+            } else {
+                if (obj.x < play.x && !f[0].checkCollision(WALLS) && !f[0].checkCollision(fo)) obj.dx = 1;
+                else if (obj.x > play.x && !f[2].checkCollision(WALLS) && !f[2].checkCollision(fo)) obj.dx = -1;
+                if (obj.y < play.y && !f[1].checkCollision(WALLS) && !f[1].checkCollision(fo)) obj.dy = 1;
+                else if (obj.y > play.y && !f[3].checkCollision(WALLS) && !f[3].checkCollision(fo)) obj.dy = -1;
+                obj.x += obj.dx;
+                obj.y += obj.dy;
+            }
+        }, 1000 / speed)
+    }
+
+
+    function setCrayMoveGhost(obj, speed) {
+        clearInterval(obj.move)
+        obj.move = setInterval(function () {
+            obj.timer += 1;
+            if (obj.timer == 100) {
+                obj.timer = 0;
+                clearInterval(obj.move)
+                // setMoveGhost(obj, 10)
+                GHOSTS = GHOSTS.filter(i => i !== obj);
+                if (GHOSTS.length==0){
+                    preinstall()
+                }
+            }
+            obj.dx = obj.dy = 0
+            let f = [new Rect(obj.x + 1, obj.y, obj.wid, obj.hei),
+                new Rect(obj.x, obj.y + 1, obj.wid, obj.hei),
+                new Rect(obj.x - 1, obj.y, obj.wid, obj.hei),
+                new Rect(obj.x, obj.y - 1, obj.wid, obj.hei)];
+            let fo = GHOSTS.filter(i => i !== obj);
+            if (obj.checkCollision([play])) {
+                obj.dx = obj.dy = 0
+            } else {
+                if (obj.x < play.x && !f[0].checkCollision(WALLS) && !f[0].checkCollision(fo)) obj.dx = -1;
+                else if (obj.x > play.x && !f[2].checkCollision(WALLS) && !f[2].checkCollision(fo)) obj.dx = 1;
+                if (obj.y < play.y && !f[1].checkCollision(WALLS) && !f[1].checkCollision(fo)) obj.dy = -1;
+                else if (obj.y > play.y && !f[3].checkCollision(WALLS) && !f[3].checkCollision(fo)) obj.dy = 1;
+                obj.x += obj.dx;
+                obj.y += obj.dy;
+            }
+        }, 1000 / speed)
+    }
+
+    function checkZoneCollisionPlayer() {
+        if (play.x + play.wid < 0) play.x = width - 1;
+        if (play.y + play.hei < 0) play.y = height - 1;
+        if (play.x > width) play.x = 1;
+        if (play.y > height) play.y = 1;
+    }
+
+    const rnd = (max) => {
+        return Math.round(Math.abs(Math.random() * max))
+    }
+</script>
+
+</body>
+</html>

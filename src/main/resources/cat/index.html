@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<canvas id="canvas" style="background-color: #2d2727" width="500" height="500"></canvas>
+</body>
+<script>
+    let canvas = document.getElementById("canvas"),
+        ctx = canvas.getContext("2d"),
+        tick = 0,
+        x = 10,
+        y = 10,
+        tx = 250,
+        ty = 250,
+        cat_left = new Image(),
+        cat_right = new Image(),
+        cat_stand = new Image();
+
+    init();
+
+    function init() {
+        cat_left.src = '10-cat-left.png'
+        cat_right.src = '10-cat-right.png'
+        cat_stand.src = 'cat-stand.png'
+        window.requestAnimationFrame(main);
+    }
+
+    setInterval(() => {
+        tick++
+        if (tick >= 10) {
+            tick = 0
+        }
+    }, 60)
+
+    setInterval(() => {
+        ty = calcCord(getRnd(0, 500))
+        tx = calcCord(getRnd(0, 500))
+    }, 6000)
+
+    function drawCat() {
+        let frame = tick % 10;
+        let xf = frame * 83;
+        if ((tx - 40) === x && (ty - 80) === y) {
+            ctx.drawImage(cat_stand, x, y)
+        } else {
+            ctx.drawImage(
+                tx - 40 < x ? cat_left : cat_right,        // изображение спрайт-листа
+                xf, 0, 85, 110,  // исходные координаты (x,y,w,h)
+                x, y, 85, 110,  // конечные координаты (x,y,w,h)
+            );
+        }
+        console.log(tick)
+    }
+
+    function main() {
+        ctx.clearRect(0, 0, 500, 500)
+        //сетка
+        for (let i = 0; i < 500; i += 50) {
+            for (let j = 0; j < 500; j += 50) {
+                ctx.strokeRect(i, j, 50, 50);
+            }
+        }
+        drawCat()
+        ctx.drawImage(cat_left, tx, ty, 5, 5);
+        if (tx - 40 < x) {
+            x--
+        }
+        if (ty - 80 < y) {
+            y--
+        }
+        if (tx - 40 > x) {
+            x++
+        }
+        if (ty - 80 > y) {
+            y++
+        }
+        window.requestAnimationFrame(main);
+    }
+
+    canvas.addEventListener("mousedown", (e) => {
+        let mx = e.clientX - canvas.getBoundingClientRect().left - 2.5
+        let my = e.clientY - canvas.getBoundingClientRect().top - 2.5
+        ty = calcCord(my)
+        tx = calcCord(mx)
+    })
+
+    function calcCord(cord) {
+        if (cord < 50) {
+            return 25
+        } else if (cord < 100) {
+            return 75
+        } else if (cord < 150) {
+            return 125
+        } else if (cord < 200) {
+            return 175;
+        } else if (cord < 250) {
+            return 225
+        } else if (cord < 300) {
+            return 275
+        } else if (cord < 350) {
+            return 325
+        } else if (cord < 400) {
+            return 375
+        } else if (cord < 450) {
+            return 425
+        } else {
+            return 475
+        }
+    }
+
+    function getRnd(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min
+    }
+
+</script>
+</html>

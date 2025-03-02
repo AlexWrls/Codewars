@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Styling lines</title>
+    <style></style>
+    <script src="app.js"></script>
+</head>
+<body onload="run();">
+<canvas id="canvas" width="600" height="400" style="border: 1px solid black;"></canvas>
+<script>
+    function run() {
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const b1 = new Box(100, 100, 120, 50, '#a11d1d', 12, 12)
+        const b2 = new Box(200, 150, 70, 50, '#945f5f', 7, 0)
+        const b3 = new Box(300, 170, 50, 50, '#1f54c7', 5, 0)
+        const b4 = new Box(400, 70, 150, 100, '#1f54c7', 100, 0)
+
+        const eb1 = b1.drawRect(ctx);
+        const eb2 = b2.drawRect(ctx);
+        const eb3 = b3.drawRect(ctx);
+        const eb4 = b4.drawRect(ctx);
+
+
+        var elementslist = []
+        var boxlist = []
+
+        elementslist.push(eb1, eb2, eb3, eb4)
+        boxlist.push(b1, b2, b3, b4)
+
+        let activeBox = null
+        let isBox;
+
+        canvas.addEventListener('mousedown',
+            function (event) {
+                event = event || window.event;
+                isBox = false
+                for (let i = 0; i < elementslist.length; i++) {
+                    if (elementslist[i] && ctx.isPointInPath(elementslist[i], event.offsetX, event.offsetY)) {
+                        canvas.style.cursor = 'pointer';
+                        ctx.fillStyle = 'orange';
+                        ctx.fill(elementslist[i]);
+                        isBox = true
+                        if (activeBox != null && activeBox !== i) {
+                            let incSize = boxlist[i].incSize(boxlist[activeBox].cont);
+                            boxlist[activeBox].decSize(incSize)
+                            console.log('incSize=' + incSize)
+                            console.log('activeBoxCont=' + boxlist[activeBox].cont)
+                        } else {
+                            activeBox = i;
+                        }
+                    } else {
+                        // ctx.fillStyle = 'red';
+                        ctx.fill(elementslist[i]);
+                    }
+                }
+                activeBox = isBox ? activeBox : null;
+                console.log('activeBox=' + activeBox)
+                console.log('box a1=' + b1.cont)
+                console.log('box a2=' + b2.cont)
+                console.log('box a3=' + b3.cont)
+                console.log('box a4=' + b4.cont)
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                boxlist.forEach(i => i.drawCont(ctx))
+                boxlist.forEach(i => i.drawRect(ctx))
+            });
+    }
+
+
+</script>
+</body>
+</html>

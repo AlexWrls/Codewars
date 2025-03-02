@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="entity.js"></script>
+</head>
+<body>
+<div id="lv"></div>
+<div id="source"></div>
+<canvas id="canvas" width="600" height="600" style="background: #f4f4f4;"></canvas>
+<script>
+    let canvas, ctx;
+    let play = new LiveMoveRect(55, 180, 0, 0, 5, 5, '#446d43', 3)
+    let width = 600;
+    let height = 600;
+
+    let liker = []
+    let dangers = []
+    let walls = []
+
+    let dan1 = new MoveRect(55, 55, 0, 0, 20, 20, '#1c9684')//тормоз
+    let dan2 = new MoveRect(500, 55, 0, 0, 20, 20, '#1c4996')//медленный
+    let dan3 = new MoveRect(55, 500, 0, 0, 20, 20, '#be7706')//умеренный
+    let dan4 = new MoveRect(501, 525, 0, 0, 20, 20, '#b70404')//шустрый
+
+
+    let speed = 1;
+
+
+    //Погготовка Сцены
+    window.onload = function () {
+        canvas = document.getElementById("canvas");
+        ctx = canvas.getContext("2d");
+        dangers.push(dan1)
+        dangers.push(dan2)
+        dangers.push(dan3)
+        dangers.push(dan4)
+
+        for (let j = 0, y = 0; j < 20; j++) {
+            for (let i = 0, x = 0; i < 20; i++) {
+                if (i % 2 == 0) {
+                    walls.push(new Rect(x, y, 5, 5, '#b8b8b8'))
+                }
+                x += 2.5;
+            }
+            y += 5
+        }
+        for (let i = 0; i < dangers.length; i++) {
+            moveDangers(dangers[i], i / 2 + 0.1)
+        }
+        liker = [createLiker()]
+    };
+
+    function createLiker() {
+        while (true) {
+            const li = new Rect(rnd(width), rnd(height), 20, 20, '#d9c005')
+            if (!li.checkCollision(walls)) {
+                return li;
+            }
+        }
+    }
+
+    addEventListener("keydown", function moveRect(e) {
+        play.dx = play.dy = 0;
+        switch (e.keyCode) {
+            case 37:  // если нажата клавиша влево
+                if (play.x > 0) play.dx = -1
+                break;
+            case 38:   // если нажата клавиша вверх
+                if (play.y > 0) play.dy = -1
+                break;
+            case 39:   // если нажата клавиша вправо
+                if (play.x < width) play.dx = 1
+                break;
+            case 40:   // если нажата клавиша вниз
+                if (play.y < height) play.dy = 1
+                break;
+        }
+    });
+
+    // Основная Сцена
+    setInterval(function drawFrame() {
+        play.x += play.dx;
+        play.y += play.dy;
+        ctx.clearRect(0, 0, width, height);
+        drawObjects()
+
+
+        checkZoneCollisionPlayer()
+        let collision = play.getCollision(walls);
+        if (collision != null) {
+            walls = walls.filter(i => i != collision)
+            play.stop()
+        }
+        if (play.checkCollision(dangers)) {
+            play.stop()
+            play.live -= 1;
+            document.getElementById('lv').innerHTML = '<p>ooo you touch my ta-la-la :' + play.live + '</p>'
+        }
+        if (play.checkCollision(liker)) {
+            document.getElementById('source').innerHTML += '<span>P</span>'
+            liker = [createLiker()]
+            moveDangers(dangers[rnd(4)], speed += 0.01)
+        }
+    }, 1000 / 60);
+
+    // Нарисовка объектов
+    function drawObjects() {
+        for (let i = 0; i < walls.length; i++) {
+            walls[i].drawRect(ctx)
+        }
+        for (let i = 0; i < dangers.length; i++) {
+            dangers[i].drawRect(ctx)
+        }
+        play.drawRect(ctx)
+        liker[0].drawArc(ctx);
+    }
+
+    // Изменение цвета приманки
+    setInterval(function () {
+        liker[0].color = "rgb(" + rnd(255) + "," + rnd(255) + "," + rnd(255) + ")"
+    }, 1000)
+
+    //Перемещение ботов
+    function moveDangers(obj, speed) {
+        let check = 0;
+        setInterval(function () {
+            obj.dx = obj.dy = 0
+            let f = [new Rect(obj.x + 1, obj.y, obj.wid, obj.hei),
+                new Rect(obj.x, obj.y + 1, obj.wid, obj.hei),
+                new Rect(obj.x - 1, obj.y, obj.wid, obj.hei),
+                new Rect(obj.x, obj.y - 1, obj.wid, obj.hei)];
+            let fd = dangers.filter(i => i !== obj)
+            if (check <= 0) {
+                if (obj.x < play.x && !f[0].checkCollision(walls)) obj.dx = 1;
+                if (obj.x > play.x && !f[2].checkCollision(walls)) obj.dx = -1;
+                if (obj.y < play.y && !f[1].checkCollision(walls)) obj.dy = 1;
+                if (obj.y > play.y && !f[3].checkCollision(walls)) obj.dy = -1;
+
+                if (obj.checkCollision(fd)) {
+                    obj.dx = obj.dy = 0
+                    if (obj.x < play.x && !f[0].checkCollision(fd) && !f[0].checkCollision(walls)) obj.dx = 1;
+                    if (obj.x > play.x && !f[2].checkCollision(fd) && !f[2].checkCollision(walls)) obj.dx = -1;
+                    if (obj.y < play.y && !f[1].checkCollision(fd) && !f[1].checkCollision(walls)) obj.dy = 1;
+                    if (obj.y > play.y && !f[3].checkCollision(fd) && !f[3].checkCollision(walls)) obj.dy = -1;
+                }
+            }
+            if (obj.dx == 0 && obj.dy == 0) {
+                check = check <= 0 ? 50 : check -= 1;
+                if (!f[0].checkCollision(fd) && !f[0].checkCollision(walls)) obj.dx = 1;
+                if (!f[2].checkCollision(fd) && !f[2].checkCollision(walls)) obj.dx = -1;
+                if (!f[1].checkCollision(fd) && !f[1].checkCollision(walls)) obj.dy = 1;
+                if (!f[3].checkCollision(fd) && !f[3].checkCollision(walls)) obj.dy = -1;
+
+            }
+            if (obj.checkCollision([play])) {
+                obj.dx = obj.dy = 0
+            } else {
+                obj.x += obj.dx;
+                obj.y += obj.dy;
+            }
+        }, 1000 / (10 * speed))
+    }
+
+    function checkZoneCollisionPlayer() {
+        if (play.x + play.wid < 0) play.x = width - 1;
+        if (play.y + play.hei < 0) play.y = height - 1;
+        if (play.x > width) play.x = 1;
+        if (play.y > height) play.y = 1;
+    }
+
+    const rnd = (max) => {
+        return Math.round(Math.abs(Math.random() * max))
+    }
+</script>
+
+</body>
+</html>
